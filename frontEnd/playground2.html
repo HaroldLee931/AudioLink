@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>长按事件</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+
+</head>
+<style type="text/css">
+	.nl-btn{padding: 8px 20px; user-select:none; border: solid thin #bfbfbf;border-radius: 2px; box-sizing: border-box; font-size: 14px; display: inline-block; cursor: pointer; color: #0b0d0c;  background-color: #fff; outline: none;}
+.nl-btn:hover{background-color: #01b841; color: #fff;font-size: 14px;border-radius: 2px; border-color: #01b841;}
+.nl-btn:active{background-color: #26ac5b; color: #fff;font-size: 14px;border-radius: 2px; border-color: #26ac5b;}
+</style>
+<body>
+<button class="nl-btn">长按事件</button>
+<script type="text/javascript">
+	var btn=document.querySelector(".nl-btn");
+
+	var timer=null;
+
+	var touchstartHander=function(event){
+		// event.preventDefault();
+		// timer=setTimeout(LongPress, 50);
+		timer=setTimeout(StartRecording, 60);
+	}
+
+	var touchmoveHander=function(event){
+		event.preventDefault();
+		clearTimeout(timer);
+        timer=null;
+	}
+
+	var touchendHander=function(event){
+		event.preventDefault();
+    EndRecording();
+    console.log(timer);
+		clearTimeout(timer);
+
+        return false;
+	}
+	// 移动端
+	btn.addEventListener("touchstart",touchstartHander,false);
+	btn.addEventListener("touchmove",touchmoveHander,false);
+	btn.addEventListener("touchend",touchendHander,false);
+
+	/// PC端
+	btn.addEventListener("mousedown",touchstartHander,false);
+	btn.addEventListener("mousemove",touchmoveHander,false);
+	btn.addEventListener("mouseup",touchendHander,false);
+
+  function LongPress(){
+  	// alert("长按被触发")
+  	console.log("300S长按被触发");
+	}
+
+  function StartRecording(){
+    console.log("录音开始");
+    setTimeout(EndRecording, 6000);
+  }
+
+  function EndRecording(){
+    console.log("录音结束");
+  }
+</script>
+</body>
+</html>
