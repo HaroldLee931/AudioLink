@@ -3,18 +3,14 @@ from flask_cors import CORS
 import json
 
 app = Flask(__name__)
-CORS(app ,supports_credentials=True)
+CORS(app, supports_credentials=True)
 
 @app.route("/data_pipeline", methods=['POST'])
 def saving_data():
-  for i in request.form:
-    app.logger.info(i)
-  '''
-  text = request.form['opt_job']
-  text2 = request.form['opt_language']
-  app.logger.warning(text)
-  app.logger.error(text2)
-  app.logger.info('Harold')'''
+  # https://blog.csdn.net/zhangvalue/article/details/93884630
+  # https://blog.csdn.net/longting_/article/details/80637002
+  text = json.loads(request.data.decode('utf8').replace("'", '"'))
+  app.logger.warning(text['usermsg'])  # same with <input name='usermsg'>
   return str("hhh")
 
 marker = 0;

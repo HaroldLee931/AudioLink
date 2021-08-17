@@ -26,7 +26,7 @@ function get_data() {
   var wordData;
     $.ajax({
               type: "get",
-              url: "http://192.168.0.103:8988/get_data",
+              url: "http://192.168.11.242:8988/get_data",
               dataType: 'json',
               async:false,
               wordData,
@@ -63,10 +63,10 @@ function draw() {
   let content = word['text'];
   textSize(weight);
 
-  textAlign(CENTER);
+  textAlign(CENTER, CENTER);
   //alert(word['text']);
   //ellipse(mouseX, mouseY, word['size'], height/2);
-  text(content, width/2, height/2, 100, 100);
+  text(content, width/2, height/2, 80, 80);
 }
 
 function windowResized() {
