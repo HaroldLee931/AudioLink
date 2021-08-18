@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title></title>
+</head>
+
+<body>
+<input id="p1" type="button" onmousedown="holdDown()" onmouseup="holdUp()" value="鼠标长按"/>
+
+<script type="text/javascript">
+    //申明全局变量
+    var timeStart, timeEnd, time;
+
+    //获取此刻时间
+    function getTimeNow() {
+        var now = new Date();
+        return now.getTime();
+    }
+
+    //鼠标按下时触发
+    function holdDown() {
+        //获取鼠标按下时的时间
+        timeStart = getTimeNow();
+
+        //setInterval会每100毫秒执行一次，也就是每100毫秒获取一次时间
+        time = setInterval(function () {
+            timeEnd = getTimeNow();
+
+            //如果此时检测到的时间与第一次获取的时间差有1000毫秒
+            if (timeEnd - timeStart > 1000) {
+                //便不再继续重复此函数 （clearInterval取消周期性执行）
+                clearInterval(time);
+                //字体变红
+                document.getElementById("p1").style.color = "red";
+            }
+        }, 100);
+    }
+    function holdUp() {
+        //如果按下时间不到1000毫秒便弹起，
+        clearInterval(time);
+    }
+</script>
+</body>
+</html>

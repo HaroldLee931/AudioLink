@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <style>
+      #circle {
+        width: 50px;
+        height: 50px;
+        -webkit-border-radius: 25px;
+        -moz-border-radius: 25px;
+        border-radius: 25px;
+        background: blue;
+      }
+      </style>
+</head>
+<body>
+    <a href="javascript:;" onclick="highlightMe(this)">link-A</a>
+    <a href="javascript:;" onclick="highlightMe(this)">link-B</a>
+    <a href="javascript:;" onclick="highlightMe(this)">link-C</a>
+    <a href="javascript:;" onclick="highlightMe(this)">link-D</a>
+    <div id="circle" onclick="highlightCircle(this)"> </div>
+</br>
+    <form action="http://192.168.43.77:8988/data_pipeline" method="post">
+      <div>
+        <label for="name">Name:</label>
+        <input type="text" value="by default this element is filled with this text" />
+      </div>
+      <div>
+        <label for="mail">E-mail:</label>
+        <input type="email" id="mail">
+      </div>
+      <div>
+        <label for="msg">Message:</label>
+        <textarea id="msg"></textarea>
+      </div>
+      <div class="button">
+        <button type="submit">Send your message</button>
+      </div>
+    </form>
+<script>
+    function highlightMe(elem){
+        elem.style.color = "red";
+    }
+    function highlightCircle(elem){
+        elem.style.color = "red";
+    }
+</script>
+
+<h2>Recommendation</h2>
+<select name="selectJob" , id="selectJob">
+    <option value="Administrative and support services">Administration</option>
+</select>
+
+<select name="selectLanguage" , id="selectLanguage">
+    <option value="Arabic">Arabic</option>
+</select>
+<input type="button" class="btn" value="Get Your recommendation"/>
+<script>
+    var constraints = { audio: true,video:false }
+    var recommendation
+    //ajax调用无参数后台方法
+    $(function () {
+        $(".btn").click(function () {
+            var opt_language = $("#selectLanguage option:selected").val();
+            var opt_job = $("#selectJob option:selected").val();
+            if (opt_job == 0) {
+                alert("请选择要查询的选项！");
+                return false;
+            }
+            $.ajax({
+                type: "post",
+                url: "http://192.168.43.77:8988/data_pipeline",
+
+                data: {
+                    opt_job: opt_job,
+                    opt_language: opt_language
+                },
+
+                success: function (recommendation) {
+                    alert(recommendation);
+                }
+            })
+        })
+    });
+
+</script>
+
+</body>
+</html>
