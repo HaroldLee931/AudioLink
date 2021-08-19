@@ -8,6 +8,11 @@ import pandas as pd
 
 # TODO: get file name list form folder
 
+from tencentcloud.common import credential
+from tencentcloud.common.profile.client_profile import ClientProfile
+from tencentcloud.common.profile.http_profile import HttpProfile
+from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
+from tencentcloud.asr.v20190614 import asr_client, models
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -33,6 +38,32 @@ def saveTextToCSV(sentence:str, time_data:float):
   end = time.time()
   app.logger.warning('Timing cost')
   app.logger.warning(end - time_data)
+
+def audioToText(request_data):
+  try:
+      cred = credential.Credential("SecretId", "SecretKey")
+      httpProfile = HttpProfile()
+      httpProfile.endpoint = "asr.tencentcloudapi.com"
+
+      clientProfile = ClientProfile()
+      clientProfile.httpProfile = httpProfile
+      client = asr_client.AsrClient(cred, "", clientProfile)
+
+      req = models.CreateRecTaskRequest()
+      params = {
+          "EngineModelType": "16k_zh",
+          "ChannelNum": 2,
+          "ResTextFormat": 0,
+          "SourceType": 1,
+          "Data": request_data
+      }
+      req.from_json_string(json.dumps(params))
+
+      resp = client.CreateRecTask(req)
+      return resp.to_json_string()
+
+  except TencentCloudSDKException as err:
+      return app.logger.warning(err)
 
 ###################################
 #   route to different web page   #
@@ -64,15 +95,17 @@ def recive_text_data():
 
 @app.route("/audio_pipeline", methods=['POST'])
 def recive_audio_data():
+  # https://blog.csdn.net/baidu_18197725/article/details/88561400
   audio = request.files['audio_file']
   # for test only
   audio.save(audio.filename)
+  # audioToText(audio)
   '''
   start = time.time()
   audio.save(str(start))
   # TODO: a_to_t_api(audio)
   '''
-  return str("haoyeah")
+  return audioToText(audio)
 
 @app.route("/get_data", methods=['GET'])
 def pop_data():
