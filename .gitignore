@@ -8,3 +8,10 @@ application.windows32
 application.windows64
 application.macosx
 out
+back_end/static/voiceData/*
+back_end/static/alphaTestFloder/*
+back_end/static/alphaTest/*
+back_end/server.log
+back_end/tencent_log.txt
+back_end/text_data.csv
+server.log

@@ -29,11 +29,11 @@
 </head>
 
 <body>
-
+  <div><h1>啥东西都没有的Alpha 0.1测试</h1>Powered By Harold with lack of confidence</div>
 <div>
-  <h2>下面是传输文本的表单</h2>
+  <h2>下面是传输文本的地方</h2>
   <form>
-    <input id='msg' type='text' value='msg' name='usermsg'>
+    <input id='msg' type='text' name='usermsg'>
     <button id="upload_text">send your sentence</button>
   </form>
 </div>
@@ -43,7 +43,9 @@
 </div>
 
 <div>
-  <h2>下面是传输音频文件的表单</h2>
+  <h2>下面是传输音频文件的地方</h2>
+  <h3>上传完成后会有弹窗 在弹窗前不要关闭窗口</h3>
+  <h3>请不要上传音频之外的东西，文件不要大于5mb</h3>
   <form enctype="multipart/form-data">
     <p>上传音频文件<input type="file" id="audio_file" name="audio_file"/></p>
     <button id="import">上传</button>
@@ -62,7 +64,7 @@
       data: sentence,  // {"username":"chen","nickname":"alien"} 传输待传输数据
       dataType:"text", // 预期返回的数据格式
       success:function(ret) {  // 这里的ret后端返回的
-        // alert(ret);
+        alert(ret);
       },
       error:function() {
         alert("请求出错！");
@@ -83,6 +85,7 @@
       cache: false,
       processData: false,
       contentType: false,
+      async: false,
       dataType:"text",
       success: function (ret) {
           alert(ret);

@@ -3,6 +3,7 @@ from flask_cors import CORS
 import json
 import jieba
 import time
+import os
 # import jieba.posseg as pseg
 import pandas as pd
 
@@ -39,31 +40,45 @@ def saveTextToCSV(sentence:str, time_data:float):
   app.logger.warning('Timing cost')
   app.logger.warning(end - time_data)
 
-def audioToText(request_data):
+
+def audioToText(audio_data_url:str):
   try:
-      cred = credential.Credential("SecretId", "SecretKey")
-      httpProfile = HttpProfile()
-      httpProfile.endpoint = "asr.tencentcloudapi.com"
+    cred = credential.Credential(
+      os.environ.get("TENCENTCLOUD_SECRET_ID"),
+      os.environ.get("TENCENTCLOUD_SECRET_KEY"))
+    httpProfile = HttpProfile()
+    httpProfile.endpoint = "asr.tencentcloudapi.com"
 
-      clientProfile = ClientProfile()
-      clientProfile.httpProfile = httpProfile
-      client = asr_client.AsrClient(cred, "", clientProfile)
+    clientProfile = ClientProfile()
+    clientProfile.httpProfile = httpProfile
+    client = asr_client.AsrClient(cred, "", clientProfile)
 
-      req = models.CreateRecTaskRequest()
-      params = {
-          "EngineModelType": "16k_zh",
-          "ChannelNum": 2,
-          "ResTextFormat": 0,
-          "SourceType": 1,
-          "Data": request_data
-      }
-      req.from_json_string(json.dumps(params))
+    req = models.CreateRecTaskRequest()
+    params = {
+        "EngineModelType": "16k_zh",
+        "ChannelNum": 1,
+        "ResTextFormat": 0,
+        "SourceType": 0,
+        "Url": audio_data_url
+    }
+    req.from_json_string(json.dumps(params))
 
-      resp = client.CreateRecTask(req)
-      return resp.to_json_string()
+    resp = client.CreateRecTask(req)
+
+    with open('tencent_log.txt', mode='a') as filename:
+      app.logger.warning(resp.to_json_string())
+      filename.write('SUCC\n')
+      filename.write(resp.to_json_string())
+      filename.write('\n') # 换行
+    return 0
 
   except TencentCloudSDKException as err:
-      return app.logger.warning(err)
+    app.logger.warning(err)
+    with open('tencent_log.txt', mode='a') as filename:
+      filename.write('FAIL\n')
+      filename.write(err)
+      filename.write('\n')
+    return 1
 
 ###################################
 #   route to different web page   #
@@ -84,7 +99,7 @@ def visit_eggs_page():
 ###################################
 #     request data transfer       #
 ###################################
-@app.route("/text_pipeline", methods=['POST'])
+@app.route("/text_pipeline", methods=['GET','POST'])
 def recive_text_data():
 
   # https://blog.csdn.net/zhangvalue/article/details/93884630
@@ -93,19 +108,19 @@ def recive_text_data():
   saveTextToCSV(text['usermsg'], time.time())
   return str("hhh")
 
-@app.route("/audio_pipeline", methods=['POST'])
+@app.route("/audio_pipeline", methods=['GET','POST'])
 def recive_audio_data():
   # https://blog.csdn.net/baidu_18197725/article/details/88561400
   audio = request.files['audio_file']
   # for test only
-  audio.save(audio.filename)
-  # audioToText(audio)
-  '''
   start = time.time()
-  audio.save(str(start))
-  # TODO: a_to_t_api(audio)
-  '''
-  return audioToText(audio)
+  audioFilePath = "alphaTest/" + str(start)[-6:-1] + "_" + audio.filename
+  audio.save("/home/ubuntu/AudioLink/back_end/static/" + audioFilePath)
+  audio_url = 'http://110.40.187.74:8988' + url_for('static', filename=audioFilePath)
+  if(audioToText(audio_url) == 0):
+    return str("音频上传成功\n语音识别任务创建成功\n> v <\n好耶")
+  else:
+    return str("出问题惹\n" + audioFilePath + "\n请把这个截图发给Harold")
 
 @app.route("/get_data", methods=['GET'])
 def pop_data():
