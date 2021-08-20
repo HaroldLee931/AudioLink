@@ -6,6 +6,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Interface</title>
+<!--
+阿哈你发现了我
+这里是项目：巴别塔的开发致你的一些话：
+这是一次临时起意的共创项目，
+由于主程缺少web开发经验，
+所以请不要发起DDOS攻击，
+不要上传过大的文件，非音频类文件。
+不要伪装文件进行攻击。
+如果您希望改进我们网站的安全性，以及其他的功能提升
+请访问项目地址：https://github.com/HaroldLee931/AudioLink
+紧急联系请拨打：+86 15801881452
+-->
 
 <!-- Noto Serif TC -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -53,6 +65,7 @@
 </div>
 
 <script type="application/javascript">
+  var buffer;
   // Text upload function
   // special thanks to https://blog.csdn.net/weixin_45050258/article/details/103134233
   $("#upload_text").click(function () {
@@ -72,9 +85,15 @@
     });
   });
 
+  function jump(url){
+        alert(url);
+			  window.location.href = url;
+  };
+
   // Audion upload function
   // Special thanks to https://www.cnblogs.com/Renyi-Fan/p/9581951.html
-  $("#import").click(function () {
+  $("#import").click(function (e) {
+    e.preventDefault();
     var files = $('#audio_file').prop('files');
     var audio_data = new FormData();
     audio_data.append('audio_file', files[0]);
@@ -86,11 +105,26 @@
       processData: false,
       contentType: false,
       async: false,
-      dataType:"text",
+      /* dataType:"text",
       success: function (ret) {
-          alert(ret);
-      }
+          alert(ret['context']);
+          window.location.replace("/vislization.html");
+      },*/
+      // TODO: 需要一个禁止再次按按钮的功能
+      // TODO: 需要保存cookie
+      success: function(ret){
+        alert(ret['content']);
+        buffer = ret;
+        jump(ret['content']);
+      },
+
+      error: function (ret) {
+          alert(ret['content']);
+      },
     });
+
+
+
   });
 </script>
 

@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, url_for
+from flask import Flask, request, render_template, url_for, redirect, jsonify
 from flask_cors import CORS
 import json
 import jieba
@@ -41,7 +41,8 @@ def saveTextToCSV(sentence:str, time_data:float):
   app.logger.warning(end - time_data)
 
 
-def audioToText(audio_data_url:str):
+def audioToText(audioFilePath:str):
+  audio_data_url = 'http://110.40.187.74:8988' + url_for('static', filename=audioFilePath)
   try:
     cred = credential.Credential(
       os.environ.get("TENCENTCLOUD_SECRET_ID"),
@@ -68,6 +69,7 @@ def audioToText(audio_data_url:str):
     with open('tencent_log.txt', mode='a') as filename:
       app.logger.warning(resp.to_json_string())
       filename.write('SUCC\n')
+      filename.write(audioFilePath)
       filename.write(resp.to_json_string())
       filename.write('\n') # 换行
     return 0
@@ -76,6 +78,7 @@ def audioToText(audio_data_url:str):
     app.logger.warning(err)
     with open('tencent_log.txt', mode='a') as filename:
       filename.write('FAIL\n')
+      filename.write(audioFilePath)
       filename.write(err)
       filename.write('\n')
     return 1
@@ -112,15 +115,22 @@ def recive_text_data():
 def recive_audio_data():
   # https://blog.csdn.net/baidu_18197725/article/details/88561400
   audio = request.files['audio_file']
-  # for test only
   start = time.time()
-  audioFilePath = "alphaTest/" + str(start)[-6:-1] + "_" + audio.filename
+  audioFilePath = "alphaTest/" + str(start) + "_" + audio.filename
   audio.save("/home/ubuntu/AudioLink/back_end/static/" + audioFilePath)
-  audio_url = 'http://110.40.187.74:8988' + url_for('static', filename=audioFilePath)
-  if(audioToText(audio_url) == 0):
-    return str("音频上传成功\n语音识别任务创建成功\n> v <\n好耶")
+  if(audioToText(audioFilePath) == 0):
+    return jsonify(content=str("http://110.40.187.74:8988/visualization"))
+    #return json.dump({'content':str("音频上传成功\n语音识别任务创建成功\n> v <\n好耶")})
   else:
-    return str("出问题惹\n" + audioFilePath + "\n请把这个截图发给Harold")
+    return json.dump({'content':str("出问题惹\n" + audioFilePath + "\n请把这个截图发给Harold")})
+  '''
+  if(True):
+    # return redirect(url_for('visit_visualization_page'), code=302)
+    return jsonify(content=str("http://110.40.187.74:8988/visualization"))
+    # json.dumps({'content':str("http://110.40.187.74:8988/visualization")})
+  else:
+    return json.dumps({'content':str("出问题惹\n请把这个截图发给Harold")})
+  '''
 
 @app.route("/get_data", methods=['GET'])
 def pop_data():
