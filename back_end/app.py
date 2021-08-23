@@ -5,12 +5,10 @@ import json
 import time
 import os
 # import jieba.posseg as pseg
-import pandas as pd
-import re
-from pandas.io.parsers import read_csv
+#import pandas as pd
+#from pandas.io.parsers import read_csv
 
 app = Flask(__name__)
-marker = 0
 
 ###################################
 #        Tencent ASR API          #
@@ -22,19 +20,19 @@ from tencentcloud.common.profile.http_profile import HttpProfile
 from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
 from tencentcloud.asr.v20190614 import asr_client, models
 # transfer Audio to Text powered by tencent asr
+cred = credential.Credential(
+  os.environ.get("TENCENTCLOUD_SECRET_ID"),
+  os.environ.get("TENCENTCLOUD_SECRET_KEY"))
+httpProfile = HttpProfile()
+httpProfile.endpoint = "asr.tencentcloudapi.com"
+
+clientProfile = ClientProfile()
+clientProfile.httpProfile = httpProfile
+client = asr_client.AsrClient(cred, "", clientProfile)
+
 def audioToText(audioFilePath:str):
   audio_data_url = 'http://110.40.187.74:8988' + url_for('static', filename=audioFilePath)
   try:
-    cred = credential.Credential(
-      os.environ.get("TENCENTCLOUD_SECRET_ID"),
-      os.environ.get("TENCENTCLOUD_SECRET_KEY"))
-    httpProfile = HttpProfile()
-    httpProfile.endpoint = "asr.tencentcloudapi.com"
-
-    clientProfile = ClientProfile()
-    clientProfile.httpProfile = httpProfile
-    client = asr_client.AsrClient(cred, "", clientProfile)
-
     req = models.CreateRecTaskRequest()
     params = {
         "EngineModelType": "16k_zh",
@@ -60,16 +58,6 @@ def audioToText(audioFilePath:str):
 # Get tencent data base on tencent asr task id
 def requestAToTResult(taskId:int) -> dict:
   try:
-    cred = credential.Credential(
-      os.environ.get("TENCENTCLOUD_SECRET_ID"),
-      os.environ.get("TENCENTCLOUD_SECRET_KEY"))
-    httpProfile = HttpProfile()
-    httpProfile.endpoint = "asr.tencentcloudapi.com"
-
-    clientProfile = ClientProfile()
-    clientProfile.httpProfile = httpProfile
-    client = asr_client.AsrClient(cred, "", clientProfile)
-
     req = models.DescribeTaskStatusRequest()
     params = {
         "TaskId": taskId
@@ -87,6 +75,7 @@ def requestAToTResult(taskId:int) -> dict:
 import jieba
 jieba.enable_paddle()
 jieba.initialize()
+
 def getWordList(sentence:str):
   word_list = jieba.cut_for_search(sentence)
   for i in word_list:
@@ -95,49 +84,59 @@ def getWordList(sentence:str):
 ###################################
 #    Data processing function     #
 ###################################
-sentenceStruct = {'userID':[], 'timeStamp':[],'AOrT':[], 'taskID':[], 'taskStat':[], 'sentenceData':[]}
+import redis
+import re
+# TODO: need sentence data waiting list
+# TODO: need passwd
+# TODO: Save Ip? Save count of visitor
+redis_pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True, db=0)
+r = redis.Redis(connection_pool= redis_pool)
+
+sentenceStruct = {'userID':"", 'timeStamp':"",'AOrT':"", 'taskID':"", 'taskStat':"", 'sentenceData':""}
 wordFeqStruct = {'word':[], 'feq':[], 'userID':[]}
 # storage the whole message
-
-# g_wordTable = read_csv('')
-
 # Define regex function
 chineseChrOnlyRegex = re.compile(r"[\u4e00-\u9fa5]+")
 
 # unique user ID generator
-def userIDGenerator()->str:
-  color = 1
-  return str('A')
+def userIDGenerator()->int:
+  return r.dbsize() + 1
 
-# update the g_df
-def saveToDF(userID:str, timeData:float, AOrT:int, taskID:int, sentence:str):
-  global g_df
-  newATData = {'userID': userID, 'timeStamp': str(timeData), 'AOrT': AOrT,}
+# save the data to redis
+def saveToRedis(userID:int, timeData:float, AOrT:int, taskID:int, sentence:str):
+  newATData = {'timeStamp': str(timeData), 'AOrT': AOrT}
   if AOrT == 0:
     newATData['taskStat'] = 2
     newATData['sentenceData'] = sentence
   else:
     newATData['taskID'] = taskID
     newATData['taskStat'] = 0
-  g_df = g_df.append(newATData, ignore_index=True)
+  app.logger.warning(newATData)
+  r.hmset(userID, newATData)
+  r.rpush("waiting_list", userID)
   return 0
 
 # processing result base on the status code
 # this function will be called by server every 30 sec
-def updateIdStat():
+def updateTaskStat():
   # get the data from asr server
-  global g_df
-  update_flag = 0 # 0 for no update
-  waitingList = g_df.index[g_df['taskStat'] == (0 or 1)].tolist()
-  for i in waitingList:
-    raw_data = requestAToTResult(g_df.iloc[i]['taskID'])
-    task_stat = raw_data['Status']
-    g_df.iloc[i]['taskStat'] = task_stat
-    if task_stat == 2: # succ
-      g_df.iloc[i]['sentence'] = chineseChrOnlyRegex.findall(raw_data['Data']['Result'])
-      update_flag = 1
-  # TODO: might need database
-  return update_flag
+  if r.llen("waiting_list") == 0:
+    app.logger.warning("no task is waiting")
+    return
+  for i in r.lrange("waiting_list", 0, -1):
+    task_id = r.hget(i, "taskID")
+    result_form_asr = requestAToTResult(int(task_id))['Data']
+    if result_form_asr['Status'] == 2:
+      app.logger.warning("SUCC")
+      r.hset(i, 'Status', 2)
+      r.hset(i, 'sentenceData', ''. join(chineseChrOnlyRegex.findall(result_form_asr['Result'])))
+      r.lrem("waiting_list", 1, i)
+    elif result_form_asr['Status'] == 3:
+      r.hset(i, 'Status', 3)
+      app.logger.warning("FAIL")
+      r.lrem("waiting_list", i, 1)
+    else:
+      app.logger.warning("Still doing")
 
 ###################################
 #        Scheduled task           #
@@ -146,23 +145,17 @@ class Config(object):
     JOBS = [
       {
         'id': 'backup df data to disk',
-        'func': '__main__:job2',
+        'func': '__main__:updateASRJobsresult',
         'trigger': 'interval',
         'seconds': 30
       }
     ]
 
-# interval examples
-def job1():
-  global g_df
-  g_df.to_csv("AT_data.csv", index=None, header=True)
-  app.logger.warning('DF save done')
-  if (updateIdStat() == 0):
-    app.logger.warning('no data update')
-  # else: TODO: NLP function
-
-def job2():
+# interval by APScheduler
+def updateASRJobsresult():
+  updateTaskStat()
   app.logger.warning('no data update')
+
 ###################################
 #   route to different web page   #
 ###################################
@@ -189,7 +182,7 @@ def recive_text_data():
   # https://blog.csdn.net/longting_/article/details/80637002
   text = json.loads(request.data.decode('utf8').replace("'", '"')) # same with <input name='usermsg'>
   userID = userIDGenerator()
-  saveToDF(userID, time.time(), 0, 0, text['usermsg'])
+  saveToRedis(userID, time.time(), 0, 0, text['usermsg'])
   return str("hhh")
 
 @app.route("/audio_pipeline", methods=['GET','POST'])
@@ -199,10 +192,14 @@ def recive_audio_data():
   start = time.time()
   audioFilePath = "alphaTest/" + str(start)
   audio.save("/home/ubuntu/AudioLink/back_end/static/" + audioFilePath)
+  # 可否先返回一个链接 然后继续处理 多线程 or 异步处理
+  # TODO: 大文件可能会导致服务器无响应 https://juejin.cn/post/6992116138398187533
   taskID = audioToText(audioFilePath)
+  app.logger.warning("taskID is:")
+  app.logger.warning(taskID)
   if(taskID != 1):
     userID = userIDGenerator()
-    saveToDF(userID, start, 1, taskID, str())
+    saveToRedis(userID, start, 1, taskID, str())
     # TODO: need to return a html with variable with userID
     return jsonify(content=str("http://110.40.187.74:8988/visualization"))
   else:
@@ -227,6 +224,7 @@ def pop_data():
     return json.dumps(word_list)
 
 if __name__ == '__main__':
+  marker = 0
   CORS(app, supports_credentials=True)
   app.config.from_object(Config())
   # it is also possible to enable the API directly
@@ -234,7 +232,6 @@ if __name__ == '__main__':
   scheduler = APScheduler()
   scheduler.init_app(app)
   scheduler.start()
-  g_df = read_csv('AT_data.csv')
 
   app.run(host='0.0.0.0',  # 任何ip都可以访问
           port=8988,  # 端口
