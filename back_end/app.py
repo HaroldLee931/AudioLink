@@ -20,15 +20,6 @@ from tencentcloud.common.profile.http_profile import HttpProfile
 from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
 from tencentcloud.asr.v20190614 import asr_client, models
 # transfer Audio to Text powered by tencent asr
-cred = credential.Credential(
-  os.environ.get("TENCENTCLOUD_SECRET_ID"),
-  os.environ.get("TENCENTCLOUD_SECRET_KEY"))
-httpProfile = HttpProfile()
-httpProfile.endpoint = "asr.tencentcloudapi.com"
-
-clientProfile = ClientProfile()
-clientProfile.httpProfile = httpProfile
-client = asr_client.AsrClient(cred, "", clientProfile)
 
 def audioToText(audioFilePath:str):
   audio_data_url = 'http://110.40.187.74:8988' + url_for('static', filename=audioFilePath)
@@ -70,29 +61,31 @@ def requestAToTResult(taskId:int) -> dict:
     return (err)
 
 ###################################
-#          NLP function           #
-###################################
-import jieba
-jieba.enable_paddle()
-jieba.initialize()
-
-def getWordList(sentence:str):
-  word_list = jieba.cut_for_search(sentence)
-  for i in word_list:
-    print(i)
-
-###################################
 #    Data processing function     #
 ###################################
+# data frame declaration
+# waiting_list:   ASR witing task list, will be updated after Audio created
+# nlp_wait_queue: need sentence data waiting list, will be updated after ASR TASK SUCC
+# word_count:     sorted set, use for saving word count data
+# uid hset structure {'userID':"", 'timeStamp':"",'AOrT':"", 'taskID':"", 'sentenceData':""}
 import redis
 import re
-# TODO: need sentence data waiting list
 # TODO: need passwd
 # TODO: Save Ip? Save count of visitor
-redis_pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True, db=0)
-r = redis.Redis(connection_pool= redis_pool)
 
-sentenceStruct = {'userID':"", 'timeStamp':"",'AOrT':"", 'taskID':"", 'taskStat':"", 'sentenceData':""}
+#          NLP function           #
+import jieba
+import jieba.posseg as pseg
+
+# TODO: Better model
+def jiebaCut(sentence:str):
+  words = pseg.cut(sentence,use_paddle=True) #paddle模式
+  for word, flag in words:
+    r.zincrby("word_count", 1, str(word))
+
+
+
+
 wordFeqStruct = {'word':[], 'feq':[], 'userID':[]}
 # storage the whole message
 # Define regex function
@@ -104,16 +97,16 @@ def userIDGenerator()->int:
 
 # save the data to redis
 def saveToRedis(userID:int, timeData:float, AOrT:int, taskID:int, sentence:str):
-  newATData = {'timeStamp': str(timeData), 'AOrT': AOrT}
-  if AOrT == 0:
-    newATData['taskStat'] = 2
+  newATData = {'timeStamp': str(timeData)}
+  if AOrT == 0:  # if recive text only
     newATData['sentenceData'] = sentence
+    r.rpush("nlp_wait_queue", userID)
   else:
     newATData['taskID'] = taskID
-    newATData['taskStat'] = 0
+    r.rpush("waiting_list", userID)
   app.logger.warning(newATData)
   r.hmset(userID, newATData)
-  r.rpush("waiting_list", userID)
+
   return 0
 
 # processing result base on the status code
@@ -121,22 +114,36 @@ def saveToRedis(userID:int, timeData:float, AOrT:int, taskID:int, sentence:str):
 def updateTaskStat():
   # get the data from asr server
   if r.llen("waiting_list") == 0:
-    app.logger.warning("no task is waiting")
-    return
+    app.logger.info("NO UID is in waiting_list")
+    return 0
   for i in r.lrange("waiting_list", 0, -1):
     task_id = r.hget(i, "taskID")
     result_form_asr = requestAToTResult(int(task_id))['Data']
     if result_form_asr['Status'] == 2:
-      app.logger.warning("SUCC")
+      app.logger.warning('The ASR task: %d is SUCC\n add releated UID to nlp_wait_queue', task_id)
       r.hset(i, 'Status', 2)
       r.hset(i, 'sentenceData', ''. join(chineseChrOnlyRegex.findall(result_form_asr['Result'])))
+      # add to NLP queue
+      r.rpush("nlp_wait_queue", i)
       r.lrem("waiting_list", 1, i)
     elif result_form_asr['Status'] == 3:
       r.hset(i, 'Status', 3)
-      app.logger.warning("FAIL")
-      r.lrem("waiting_list", i, 1)
+      app.logger.warning('The ASR task: %d is FAIL', task_id)
+      r.lrem("waiting_list", 1, i)
     else:
-      app.logger.warning("Still doing")
+      app.logger.info('The ASR task: %d is still processing', task_id)
+  return 1
+
+def updateNLPStat():
+  if r.llen("nlp_wait_queue") == 0:
+    app.logger.info("NO UID is in nlp_wait_queue")
+    return 0
+  for i in r.lrange("nlp_wait_queue", 0, -1):
+    sentence = r.hget(i, "sentenceData")
+    # TODO: enable after Better model
+    # jiebaCut(sentence)
+    # r.lrem("nlp_wait_queue", 1, i)
+
 
 ###################################
 #        Scheduled task           #
@@ -154,7 +161,7 @@ class Config(object):
 # interval by APScheduler
 def updateASRJobsresult():
   updateTaskStat()
-  app.logger.warning('no data update')
+  # updateNLPStat()
 
 ###################################
 #   route to different web page   #
@@ -190,13 +197,11 @@ def recive_audio_data():
   # https://blog.csdn.net/baidu_18197725/article/details/88561400
   audio = request.files['audio_file']
   start = time.time()
-  audioFilePath = "alphaTest/" + str(start)
+  audioFilePath = "betaTest/" + str(start)
   audio.save("/home/ubuntu/AudioLink/back_end/static/" + audioFilePath)
   # 可否先返回一个链接 然后继续处理 多线程 or 异步处理
   # TODO: 大文件可能会导致服务器无响应 https://juejin.cn/post/6992116138398187533
   taskID = audioToText(audioFilePath)
-  app.logger.warning("taskID is:")
-  app.logger.warning(taskID)
   if(taskID != 1):
     userID = userIDGenerator()
     saveToRedis(userID, start, 1, taskID, str())
@@ -232,6 +237,20 @@ if __name__ == '__main__':
   scheduler = APScheduler()
   scheduler.init_app(app)
   scheduler.start()
+  jieba.enable_paddle()
+  jieba.initialize()
+
+  cred = credential.Credential(
+    os.environ.get("TENCENTCLOUD_SECRET_ID"),
+    os.environ.get("TENCENTCLOUD_SECRET_KEY"))
+  httpProfile = HttpProfile()
+  httpProfile.endpoint = "asr.tencentcloudapi.com"
+  clientProfile = ClientProfile()
+  clientProfile.httpProfile = httpProfile
+  client = asr_client.AsrClient(cred, "", clientProfile)
+
+  redis_pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True, db=0)
+  r = redis.Redis(connection_pool= redis_pool)
 
   app.run(host='0.0.0.0',  # 任何ip都可以访问
           port=8988,  # 端口
