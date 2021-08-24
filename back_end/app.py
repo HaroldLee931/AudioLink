@@ -67,46 +67,45 @@ def requestAToTResult(taskId:int) -> dict:
 # waiting_list:   ASR witing task list, will be updated after Audio created
 # nlp_wait_queue: need sentence data waiting list, will be updated after ASR TASK SUCC
 # word_count:     sorted set, use for saving word count data
-# uid hset structure {'userID':"", 'timeStamp':"",'AOrT':"", 'taskID':"", 'sentenceData':""}
+# DATAID hset structure {'dataID':"", 'timeStamp':"",'AOrT':"", 'taskID':"", 'sentenceData':""}
+# wordFeqStruct = {'word':[], 'feq':[], 'dataID':[]}
+# text_upload_beta, audio_upload_beta, visualization_beta counter
 import redis
 import re
-# TODO: need passwd
-# TODO: Save Ip? Save count of visitor
 
 #          NLP function           #
 import jieba
-import jieba.posseg as pseg
+import jieba.analyse
 
-# TODO: Better model
 def jiebaCut(sentence:str):
-  words = pseg.cut(sentence,use_paddle=True) #paddle模式
-  for word, flag in words:
+  words = jieba.analyse.extract_tags(
+    sentence, topK=50, withWeight=False,
+    allowPOS=('n', 'v', 'a', 'an', 'd'))
+  for word in words:
     r.zincrby("word_count", 1, str(word))
 
 
-
-
-wordFeqStruct = {'word':[], 'feq':[], 'userID':[]}
 # storage the whole message
 # Define regex function
 chineseChrOnlyRegex = re.compile(r"[\u4e00-\u9fa5]+")
 
 # unique user ID generator
-def userIDGenerator()->int:
+def dataIDGenerator()->int:
   return r.dbsize() + 1
 
 # save the data to redis
-def saveToRedis(userID:int, timeData:float, AOrT:int, taskID:int, sentence:str):
+def saveToRedis(dataID:int, timeData:float, AOrT:int, taskID:int, sentence:str):
   newATData = {'timeStamp': str(timeData)}
   if AOrT == 0:  # if recive text only
     newATData['sentenceData'] = sentence
-    r.rpush("nlp_wait_queue", userID)
+    r.rpush("nlp_wait_queue", dataID)
+    r.incr("text_upload_beta", amount=1)
   else:
     newATData['taskID'] = taskID
-    r.rpush("waiting_list", userID)
+    r.rpush("waiting_list", dataID)
+    r.incr("audio_upload_beta", amount=1)
   app.logger.warning(newATData)
-  r.hmset(userID, newATData)
-
+  r.hmset(dataID, newATData)
   return 0
 
 # processing result base on the status code
@@ -114,13 +113,13 @@ def saveToRedis(userID:int, timeData:float, AOrT:int, taskID:int, sentence:str):
 def updateTaskStat():
   # get the data from asr server
   if r.llen("waiting_list") == 0:
-    app.logger.info("NO UID is in waiting_list")
+    app.logger.info("NO DATAID is in waiting_list")
     return 0
   for i in r.lrange("waiting_list", 0, -1):
     task_id = r.hget(i, "taskID")
     result_form_asr = requestAToTResult(int(task_id))['Data']
     if result_form_asr['Status'] == 2:
-      app.logger.warning('The ASR task: %d is SUCC\n add releated UID to nlp_wait_queue', task_id)
+      app.logger.warning('The ASR task: %d is SUCC\n add releated DATAID to nlp_wait_queue', task_id)
       r.hset(i, 'Status', 2)
       r.hset(i, 'sentenceData', ''. join(chineseChrOnlyRegex.findall(result_form_asr['Result'])))
       # add to NLP queue
@@ -136,13 +135,13 @@ def updateTaskStat():
 
 def updateNLPStat():
   if r.llen("nlp_wait_queue") == 0:
-    app.logger.info("NO UID is in nlp_wait_queue")
+    app.logger.info("NO DATAID is in nlp_wait_queue")
     return 0
   for i in r.lrange("nlp_wait_queue", 0, -1):
+    app.logger.info("DATAID %d is processing", i)
     sentence = r.hget(i, "sentenceData")
-    # TODO: enable after Better model
-    # jiebaCut(sentence)
-    # r.lrem("nlp_wait_queue", 1, i)
+    jiebaCut(sentence)
+    r.lrem("nlp_wait_queue", 1, i)
 
 
 ###################################
@@ -161,7 +160,7 @@ class Config(object):
 # interval by APScheduler
 def updateASRJobsresult():
   updateTaskStat()
-  # updateNLPStat()
+  updateNLPStat()
 
 ###################################
 #   route to different web page   #
@@ -172,6 +171,7 @@ def visit_user_input_page():
 
 @app.route("/visualization")
 def visit_visualization_page():
+  r.incr("visualization_beta", amount=1)
   return render_template('visualization.html')
 
 # TODO: eggs page developing
@@ -188,8 +188,8 @@ def recive_text_data():
   # https://blog.csdn.net/zhangvalue/article/details/93884630
   # https://blog.csdn.net/longting_/article/details/80637002
   text = json.loads(request.data.decode('utf8').replace("'", '"')) # same with <input name='usermsg'>
-  userID = userIDGenerator()
-  saveToRedis(userID, time.time(), 0, 0, text['usermsg'])
+  dataID = dataIDGenerator()
+  saveToRedis(dataID, time.time(), 0, 0, text['usermsg'])
   return str("hhh")
 
 @app.route("/audio_pipeline", methods=['GET','POST'])
@@ -203,30 +203,19 @@ def recive_audio_data():
   # TODO: 大文件可能会导致服务器无响应 https://juejin.cn/post/6992116138398187533
   taskID = audioToText(audioFilePath)
   if(taskID != 1):
-    userID = userIDGenerator()
-    saveToRedis(userID, start, 1, taskID, str())
-    # TODO: need to return a html with variable with userID
+    dataID = dataIDGenerator()
+    saveToRedis(dataID, start, 1, taskID, str())
+    # TODO: need to return a html with variable with dataID
     return jsonify(content=str("http://110.40.187.74:8988/visualization"))
   else:
     return json.dump({'content':str("出问题惹\n" + audioFilePath + "\n请把这个截图发给Harold")})
-  '''
-  if(True):
-    # return redirect(url_for('visit_visualization_page'), code=302)
-    return jsonify(content=str("http://110.40.187.74:8988/visualization"))
-    # json.dumps({'content':str("http://110.40.187.74:8988/visualization")})
-  else:
-    return json.dumps({'content':str("出问题惹\n请把这个截图发给Harold")})
-  '''
 
 @app.route("/get_data", methods=['GET'])
 def pop_data():
-  global marker
-  while(True):
-    marker += 1
-    app.logger.warning("GET")
-    word_list = {"size": marker, "text": str(marker)}
-    app.logger.warning(marker)
-    return json.dumps(word_list)
+  word_count = {}
+  for i in r.zrange("word_count", -270, -1, withscores=True):
+    word_count[i[0]] = i[1]
+  return json.dumps(word_count)
 
 if __name__ == '__main__':
   marker = 0
@@ -237,7 +226,6 @@ if __name__ == '__main__':
   scheduler = APScheduler()
   scheduler.init_app(app)
   scheduler.start()
-  jieba.enable_paddle()
   jieba.initialize()
 
   cred = credential.Credential(
