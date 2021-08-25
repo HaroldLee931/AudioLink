@@ -68,9 +68,27 @@
             padding: 16px;
             background-color: rgba(255, 255, 255, 0.5);
         }
+
         #textContainer.dark {
             background-color: rgba(0, 0, 0, 0.2);
             color: white;
+        }
+
+        #timerBox {
+            /* iOS 固定定位会有问题所以用绝对定位 */
+            position: absolute;
+            bottom: 230px;
+            left: 0;
+            z-index: 100;
+
+            display: block;
+            width: 100%;
+
+            line-height: 1;
+            font-size: 14px;
+            text-align: center;
+            color: #fff;
+            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5), -1px 1px 1px rgba(0, 0, 0, 0.5), 1px -1px 1px rgba(0, 0, 0, 0.5), -1px -1px 1px rgba(0, 0, 0, 0.5);
         }
 
         .record-btn {
@@ -128,12 +146,19 @@
 
     </div>
 
-    <a class="record-btn" id="startRecord" href="javascript:viod(0)">开始录音</a>
-    <a class="record-btn" id="stopRecord" href="javascript:viod(0)" style="display: none;">结束录音</a>
+    <div id="timerBox" style="display: none;"><span id="seconds">60</span>s</div>
+
+    <a class="record-btn" id="startRecord" href="javascript:void(0)">开始录音</a>
+    <a class="record-btn" id="stopRecord" href="javascript:void(0)" style="display: none;">结束录音</a>
 
     <script>
         var btnStartRecord = $('#startRecord');
         var btnStopRecord = $('#stopRecord');
+        var timerBox = $('#timerBox');
+        var secondsEl = $('#seconds');
+        var timer = null;
+
+        var MAX_TIME = 60; // 最长录音时间
 
         btnStartRecord.on("click", startRecord);
         btnStopRecord.on("click", stopRecord);
@@ -141,11 +166,38 @@
         function startRecord() {
             btnStartRecord.hide();
             btnStopRecord.show();
+            startTimer();
+
+            // TODO 接入开始录音API
+
         }
 
         function stopRecord() {
             btnStopRecord.hide();
             btnStartRecord.show();
+            stopTimer();
+
+            // TODO 接入结束录音API
+
+            // TODO 发送
+        }
+
+        function startTimer() {
+            timerBox.show();
+            var timerNum = MAX_TIME;
+            secondsEl.text(timerNum);
+            timer = setInterval(function () {
+                // 到 0 自动结束
+                if (timerNum <= 0) {
+                    stopRecord();
+                }
+                secondsEl.text(--timerNum);
+            }, 1000);
+        }
+
+        function stopTimer() {
+            timerBox.hide();
+            clearInterval(timer);
         }
 
 
