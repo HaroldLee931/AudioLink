@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Interface</title>
+    <!--
+    阿哈你发现了我
+    这里是项目：巴别塔的开发致你的一些话：
+    这是一次临时起意的共创项目，
+    由于主程缺少web开发经验，
+    所以请不要发起DDOS攻击，
+    不要上传过大的文件，非音频类文件。
+    不要伪装文件进行攻击。
+    如果您希望改进我们网站的安全性，以及其他的功能提升
+    请访问项目地址：https://github.com/HaroldLee931/AudioLink
+    紧急联系请拨打：+86 15801881452
+    -->
+
+    <!-- Noto Serif TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+    <style>
+        h1 {
+            font-size: 28px;
+            margin: 0;
+            padding: 0;
+        }
+
+        h2 {
+            font-size: 22px;
+            margin: 0;
+            padding: 0;
+        }
+
+        #textBox {
+            margin: 0 auto;
+            padding: 80px 32px 0;
+            font-size: 16px;
+            color: #666;
+        }
+
+        #textContainer {
+            padding: 16px;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        body {
+            position: relative;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+
+            background-position: center;
+            background-size: contain;
+        }
+
+        .record-btn {
+            /* iOS 固定定位会有问题所以用绝对定位 */
+            position: absolute;
+            bottom: 120px;
+            left: calc(50vw - 50px);
+
+
+            display: block;
+            border-radius: 50%;
+            border: 0;
+            box-sizing: border-box;
+            width: 100px;
+            height: 100px;
+            padding: 42px 0;
+            margin: 0 auto;
+
+            line-height: 1;
+            font-size: 16px;
+            text-align: center;
+            background-color: gray;
+            color: #fff;
+            text-decoration: none;
+
+            -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
+        }
+
+        #startRecord {
+            background-color: green;
+        }
+
+        #stopRecord {
+            background-color: red;
+        }
+    </style>
+</head>
+
+<body
+    style="background-image: url('https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fb-ssl.duitang.com%2Fuploads%2Fitem%2F201709%2F12%2F20170912222544_ax82N.thumb.700_0.jpeg&refer=http%3A%2F%2Fb-ssl.duitang.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1632386705&t=2899a47dae41775d43ee071542a795e7');">
+
+    <div id="textBox">
+
+        <div id="textContainer">
+            <h1>Lorem ipsum dolor sit amet, consectetur?</h1>
+            <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Deserunt quibusdam porro officia. Inventore
+                adipisci qui optio cum quod fuga vero exercitationem, vitae unde fugit? Numquam quis labore nobis quas
+                itaque nemo distinctio officia autem. Dignissimos, voluptatem ipsa explicabo eum maiores, unde pariatur
+                quidem dolores repellendus rerum aspernatur minima, sed officiis a omnis saepe accusamus voluptatum amet
+                fuga ea?</p>
+        </div>
+
+    </div>
+
+    <a class="record-btn" id="startRecord" href="javascript:viod(0)">开始录音</a>
+    <a class="record-btn" id="stopRecord" href="javascript:viod(0)" style="display: none;">结束录音</a>
+
+    <script>
+        var btnStartRecord = $('#startRecord');
+        var btnStopRecord = $('#stopRecord');
+
+        btnStartRecord.on("click", startRecord);
+        btnStopRecord.on("click", stopRecord);
+
+        function startRecord() {
+            btnStartRecord.hide();
+            btnStopRecord.show();
+        }
+
+        function stopRecord() {
+            btnStopRecord.hide();
+            btnStartRecord.show();
+        }
+
+
+    </script>
+
+</body>
+
+
+</html>
