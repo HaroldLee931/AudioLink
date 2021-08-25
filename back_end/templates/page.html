@@ -125,6 +125,16 @@
         #stopRecord {
             background-color: red;
         }
+
+        #audioContainer {
+            display: fixed;
+            top: 0;
+            bottom: 0;
+            display: none;
+            visibility: hidden;
+            height: 0;
+            width: 0;
+        }
     </style>
 </head>
 
@@ -151,6 +161,18 @@
     <a class="record-btn" id="startRecord" href="javascript:void(0)">开始录音</a>
     <a class="record-btn" id="stopRecord" href="javascript:void(0)" style="display: none;">结束录音</a>
 
+    <div id="audioContainer">
+        <div id="player">
+            <div id="inbo">
+                <div id="change"></div>
+            </div>
+            <input type="hidden" id="audiolength">
+            <hr>
+            <audio id="audioSave" controls autoplay></audio>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="./HZRecorder.js"></script>
     <script>
         var btnStartRecord = $('#startRecord');
         var btnStopRecord = $('#stopRecord');
@@ -160,6 +182,9 @@
 
         var MAX_TIME = 60; // 最长录音时间
 
+        var recorder = null;
+        var audio = document.getElementById('audioSave');
+
         btnStartRecord.on("click", startRecord);
         btnStopRecord.on("click", stopRecord);
 
@@ -168,8 +193,18 @@
             btnStopRecord.show();
             startTimer();
 
-            // TODO 接入开始录音API
+            // stop recording
+            if (recorder != null) {
+                recorder.close();
 
+                // stop playing audio
+                recorder.stopPlay();
+            }
+            // start recording
+            Recorder.get(function (rec) {
+                recorder = rec;
+                recorder.start();
+            });
         }
 
         function stopRecord() {
@@ -177,10 +212,71 @@
             btnStartRecord.show();
             stopTimer();
 
-            // TODO 接入结束录音API
+            recorder.stop();
 
-            // TODO 发送
+            //console.log(recorder.getBlob());
+
+            // auto play audio
+            recorder.play(audio);
+
+            // send
+            sendFile();
         }
+
+        // 沿用 interface.html 代码
+        function sendFile() {
+            // var files = $('#audioSave').prop('files');
+            //
+            // var fd = new FormData();
+            var buffer = recorder.getBlob(); // audioData.getPureWavData(0);            
+            // fd.set('wavData', buffer);
+            // fd.set('wavSize', buffer.size);
+            console.log("wavSize: " + buffer.size);
+            // document.getElementById('btn-text-content').value = "当前录音长度为：" + buffer.size;
+
+            // console.log("audio input files", files);
+
+            var audio_data = new FormData();
+
+            var blob = recorder.getBlob();
+
+            // audio_data.append('audio_file', files[0]);
+            audio_data.append('audio_file', blob);
+
+            console.log("audio blob length: ", blob.length);
+
+            $.ajax({
+                type: 'POST',
+                url: "http://110.40.187.74:8988//audio_pipeline",
+                data: audio_data,
+                cache: false,
+                processData: false,
+                contentType: false,
+                async: false,
+                /* dataType:"text",
+                success: function (ret) {
+                    alert(ret['context']);
+                    window.location.replace("/vislization.html");
+                },*/
+                // TODO: 需要一个禁止再次按按钮的功能
+                // TODO: 需要保存cookie
+                success: function (ret) {
+                    // alert(ret['content']);
+                    console.log(ret['content']);
+                    // buffer = ret;
+                    // jump(ret['content']);
+                },
+
+                error: function (ret) {
+                    console.log(ret['content']);
+                },
+            });
+        }
+
+        function jump(url) {
+            // alert(url);
+            window.location.href = url;
+        };
 
         function startTimer() {
             timerBox.show();
@@ -199,7 +295,6 @@
             timerBox.hide();
             clearInterval(timer);
         }
-
 
     </script>
 
