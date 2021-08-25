@@ -11,6 +11,7 @@ out
 back_end/static/voiceData/*
 back_end/static/alphaTestFloder/*
 back_end/static/alphaTest/*
+back_end/static/betaTest/*
 back_end/server.log
 back_end/tencent_log.txt
 back_end/text_data.csv

@@ -167,7 +167,7 @@ def updateASRJobsresult():
 ###################################
 @app.route("/")
 def visit_user_input_page():
-  return render_template('interface.html')
+  return render_template('page.html')
 
 @app.route("/visualization")
 def visit_visualization_page():
@@ -184,7 +184,6 @@ def visit_eggs_page():
 ###################################
 @app.route("/text_pipeline", methods=['GET','POST'])
 def recive_text_data():
-
   # https://blog.csdn.net/zhangvalue/article/details/93884630
   # https://blog.csdn.net/longting_/article/details/80637002
   text = json.loads(request.data.decode('utf8').replace("'", '"')) # same with <input name='usermsg'>
