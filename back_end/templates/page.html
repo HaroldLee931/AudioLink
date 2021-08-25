@@ -4,9 +4,9 @@
 <head>
 
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
 
-    <title>Interface</title>
+    <title>Page</title>
     <!--
     阿哈你发现了我
     这里是项目：巴别塔的开发致你的一些话：
@@ -27,6 +27,20 @@
 
     <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
     <style>
+        body {
+            position: relative;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+
+            background-color: #000;
+            background-position: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
         h1 {
             font-size: 28px;
             margin: 0;
@@ -47,20 +61,16 @@
         }
 
         #textContainer {
+            /* max-width: 500px; */
+            /* max-height: 500px; */
+            /* overflow: auto; */
+
             padding: 16px;
             background-color: rgba(255, 255, 255, 0.5);
         }
-
-        body {
-            position: relative;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-
-            background-position: center;
-            background-size: contain;
+        #textContainer.dark {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: white;
         }
 
         .record-btn {
@@ -68,6 +78,7 @@
             position: absolute;
             bottom: 120px;
             left: calc(50vw - 50px);
+            z-index: 100;
 
 
             display: block;
@@ -104,7 +115,9 @@
 
     <div id="textBox">
 
-        <div id="textContainer">
+        <!-- dark 是灰底白字 -->
+        <!-- 默认为白底黑字 -->
+        <div id="textContainer" class="dark">
             <h1>Lorem ipsum dolor sit amet, consectetur?</h1>
             <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Deserunt quibusdam porro officia. Inventore
                 adipisci qui optio cum quod fuga vero exercitationem, vitae unde fugit? Numquam quis labore nobis quas
