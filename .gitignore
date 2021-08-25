@@ -16,3 +16,4 @@ back_end/server.log
 back_end/tencent_log.txt
 back_end/text_data.csv
 server.log
+back_end/redis_play.py

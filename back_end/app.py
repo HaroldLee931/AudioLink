@@ -143,7 +143,8 @@ def updateNLPStat():
     jiebaCut(sentence)
     r.lrem("nlp_wait_queue", 1, i)
 
-
+###################################
+###################################
 ###################################
 #        Scheduled task           #
 ###################################
@@ -217,30 +218,30 @@ def pop_data():
   return json.dumps(word_count)
 
 if __name__ == '__main__':
-  marker = 0
-  CORS(app, supports_credentials=True)
-  app.config.from_object(Config())
-  # it is also possible to enable the API directly
-  # scheduler.api_enabled = True
-  scheduler = APScheduler()
-  scheduler.init_app(app)
-  scheduler.start()
-  jieba.initialize()
-
-  cred = credential.Credential(
-    os.environ.get("TENCENTCLOUD_SECRET_ID"),
-    os.environ.get("TENCENTCLOUD_SECRET_KEY"))
-  httpProfile = HttpProfile()
-  httpProfile.endpoint = "asr.tencentcloudapi.com"
-  clientProfile = ClientProfile()
-  clientProfile.httpProfile = httpProfile
-  client = asr_client.AsrClient(cred, "", clientProfile)
-
-  redis_pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True, db=0)
-  r = redis.Redis(connection_pool= redis_pool)
-
   app.run(host='0.0.0.0',  # 任何ip都可以访问
           port=8988,  # 端口
           debug=True,
-          threaded=False
+          threaded=True
          )
+
+marker = 0
+CORS(app, supports_credentials=True)
+app.config.from_object(Config())
+# it is also possible to enable the API directly
+scheduler = APScheduler()
+scheduler.api_enabled = True
+scheduler.init_app(app)
+scheduler.start()
+jieba.initialize()
+
+cred = credential.Credential(
+  os.environ.get("TENCENTCLOUD_SECRET_ID"),
+  os.environ.get("TENCENTCLOUD_SECRET_KEY"))
+httpProfile = HttpProfile()
+httpProfile.endpoint = "asr.tencentcloudapi.com"
+clientProfile = ClientProfile()
+clientProfile.httpProfile = httpProfile
+client = asr_client.AsrClient(cred, "", clientProfile)
+
+redis_pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True, db=0)
+r = redis.Redis(connection_pool= redis_pool)
