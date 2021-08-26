@@ -42,7 +42,6 @@ def audioToText(audioFilePath:str):
     with open('fail_log.txt', mode='a') as filename:
       filename.write('FAIL\n')
       filename.write(audioFilePath)
-      filename.write(err)
       filename.write('\n')
     return 1
 
@@ -104,7 +103,7 @@ def saveToRedis(dataID:int, timeData:float, AOrT:int, taskID:int, sentence:str):
     newATData['taskID'] = taskID
     r.rpush("waiting_list", dataID)
     r.incr("audio_upload_beta", amount=1)
-  app.logger.warning(newATData)
+  app.logger.info(newATData)
   r.hmset(dataID, newATData)
   return 0
 
@@ -119,7 +118,7 @@ def updateTaskStat():
     task_id = r.hget(i, "taskID")
     result_form_asr = requestAToTResult(int(task_id))['Data']
     if result_form_asr['Status'] == 2:
-      app.logger.warning('The ASR task: %d is SUCC\n add releated DATAID to nlp_wait_queue', task_id)
+      app.logger.warning('The ASR task: %s is SUCC\n add releated DATAID to nlp_wait_queue', task_id)
       r.hset(i, 'Status', 2)
       r.hset(i, 'sentenceData', ''. join(chineseChrOnlyRegex.findall(result_form_asr['Result'])))
       # add to NLP queue
@@ -127,10 +126,10 @@ def updateTaskStat():
       r.lrem("waiting_list", 1, i)
     elif result_form_asr['Status'] == 3:
       r.hset(i, 'Status', 3)
-      app.logger.warning('The ASR task: %d is FAIL', task_id)
+      app.logger.warning('The ASR task: %s is FAIL', task_id)
       r.lrem("waiting_list", 1, i)
     else:
-      app.logger.info('The ASR task: %d is still processing', task_id)
+      app.logger.info('The ASR task: %s is still processing', task_id)
   return 1
 
 def updateNLPStat():
@@ -138,24 +137,66 @@ def updateNLPStat():
     app.logger.info("NO DATAID is in nlp_wait_queue")
     return 0
   for i in r.lrange("nlp_wait_queue", 0, -1):
-    app.logger.info("DATAID %d is processing", i)
+    app.logger.info("DATAID %s is processing", i)
     sentence = r.hget(i, "sentenceData")
     jiebaCut(sentence)
     r.lrem("nlp_wait_queue", 1, i)
 
-
 ###################################
 #        Scheduled task           #
 ###################################
+import platform, atexit
 class Config(object):
     JOBS = [
       {
         'id': 'backup df data to disk',
-        'func': '__main__:updateASRJobsresult',
+        'func': 'app:updateASRJobsresult',
         'trigger': 'interval',
         'seconds': 30
       }
     ]
+
+def scheduler_init(app):
+  """
+  保证系统只启动一次定时任务
+  :param app:
+  :return:
+  """
+  if platform.system() != 'Windows':
+    fcntl = __import__("fcntl")
+    f = open('scheduler.lock', 'wb')
+    try:
+      fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+      scheduler.init_app(app)
+      scheduler.start()
+      app.logger.debug('Scheduler Started,---------------')
+    except:
+      pass
+
+    def unlock():
+      fcntl.flock(f, fcntl.LOCK_UN)
+      f.close()
+
+    atexit.register(unlock)
+  else:
+    msvcrt = __import__('msvcrt')
+    f = open('scheduler.lock', 'wb')
+    try:
+      msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+      scheduler.init_app(app)
+      scheduler.start()
+      app.logger.debug('Scheduler Started,----------------')
+    except:
+      pass
+
+    def _unlock_file():
+      try:
+        f.seek(0)
+        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+      except:
+        pass
+
+    atexit.register(_unlock_file)
 
 # interval by APScheduler
 def updateASRJobsresult():
@@ -208,37 +249,41 @@ def recive_audio_data():
     # TODO: need to return a html with variable with dataID
     return jsonify(content=str("http://110.40.187.74:8988/visualization"))
   else:
-    return json.dump({'content':str("出问题惹\n" + audioFilePath + "\n请把这个截图发给Harold")})
+    return jsonify({'content':str("出问题惹\n" + audioFilePath + "\n请把这个截图发给Harold")})
 
 @app.route("/get_data", methods=['GET'])
 def pop_data():
   word_count = {}
   for i in r.zrange("word_count", -270, -1, withscores=True):
-    word_count[i[0]] = i[1]
-  return json.dumps(word_count)
+    word_count[str(i[0])] = i[1]
+  return jsonify(word_count)
+
+marker = 0
+CORS(app, supports_credentials=True)
+app.config.from_object(Config())
+# it is also possible to enable the API directly
+# scheduler.api_enabled = True
+# if os.getppid() == 1:
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
+# scheduler_init(app)
+jieba.initialize()
+
+cred = credential.Credential(
+  os.environ.get("TENCENTCLOUD_SECRET_ID"),
+  os.environ.get("TENCENTCLOUD_SECRET_KEY"))
+httpProfile = HttpProfile()
+httpProfile.endpoint = "asr.tencentcloudapi.com"
+clientProfile = ClientProfile()
+clientProfile.httpProfile = httpProfile
+client = asr_client.AsrClient(cred, "", clientProfile)
+
+redis_pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True, db=0)
+r = redis.Redis(connection_pool= redis_pool)
 
 if __name__ == '__main__':
-  marker = 0
-  CORS(app, supports_credentials=True)
-  app.config.from_object(Config())
-  # it is also possible to enable the API directly
-  # scheduler.api_enabled = True
-  scheduler = APScheduler()
-  scheduler.init_app(app)
-  scheduler.start()
-  jieba.initialize()
 
-  cred = credential.Credential(
-    os.environ.get("TENCENTCLOUD_SECRET_ID"),
-    os.environ.get("TENCENTCLOUD_SECRET_KEY"))
-  httpProfile = HttpProfile()
-  httpProfile.endpoint = "asr.tencentcloudapi.com"
-  clientProfile = ClientProfile()
-  clientProfile.httpProfile = httpProfile
-  client = asr_client.AsrClient(cred, "", clientProfile)
-
-  redis_pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True, db=0)
-  r = redis.Redis(connection_pool= redis_pool)
 
   app.run(host='0.0.0.0',  # 任何ip都可以访问
           port=8988,  # 端口
