@@ -1,38 +1,33 @@
-var word;
-//ajax调用无参数后台方法
-function get_data() {
-  var wordData;
-    $.ajax({
-              type: "get",
-              url: "/get_data",
-              dataType: 'json',
-              async:false,
-              wordData,
-              success: function (word) {
-                  wordData = word;
-              }
-          });
-  console.log(wordData['size']);
-  return wordData;
-};
-word = get_data();
+let font;
+function preload() {
+  font = loadFont('assets/inconsolata.otf');
+}
 
+let points;
+let bounds;
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  textAlign(TOP);
+  createCanvas(100, 100);
+  stroke(0);
+  fill(255, 104, 204);
+
+  points = font.textToPoints('p5', 0, 0, 10, {
+    sampleFactor: 5,
+    simplifyThreshold: 0
+  });
+  bounds = font.textBounds(' p5 ', 0, 0, 10);
 }
 
 function draw() {
-  background(220);
-  // ellipse(width/2, height/2, mouseX, mouseY);  amazing effect :)
-
-  let weight = word['size'];  //  这个size不能太大 如果大了就会不显示 目前极限 13, 72
-  let content = word['text'];
-  textSize(weight);
-
-  // textAlign(TOP);
-  //alert(word['text']);
-  //ellipse(mouseX, mouseY, word['size'], height/2);
-  text(content, width/2, height/2, 80, 80);
-  //ellipse(width/2, height/2 ,weight, weight);
+  background(255);
+  beginShape();
+  translate(-bounds.x * width / bounds.w, -bounds.y * height / bounds.h);
+  for (let i = 0; i < points.length; i++) {
+    let p = points[i];
+    vertex(
+      p.x * width / bounds.w +
+        sin(20 * p.y / bounds.h + millis() / 1000) * width / 30,
+      p.y * height / bounds.h
+    );
+  }
+  endShape(CLOSE);
 }

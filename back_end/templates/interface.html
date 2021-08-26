@@ -86,8 +86,8 @@
   });
 
   function jump(url){
-        alert(url);
-			  window.location.href = url;
+    alert("感谢参与，将为您跳转到新页面");
+		window.location.href = url;
   };
 
   // Audion upload function
@@ -104,7 +104,7 @@
       cache: false,
       processData: false,
       contentType: false,
-      async: false,
+      async: true,
       /* dataType:"text",
       success: function (ret) {
           alert(ret['context']);
@@ -113,15 +113,16 @@
       // TODO: 需要一个禁止再次按按钮的功能
       // TODO: 需要保存cookie
       success: function(ret){
-        alert(ret['content']);
         buffer = ret;
-        jump(ret['content']);
+        jump("http://110.40.187.74:8988/visualization");
       },
 
       error: function (ret) {
           alert(ret['content']);
       },
+
     });
+
 
 
 

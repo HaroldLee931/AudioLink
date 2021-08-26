@@ -11,7 +11,16 @@ out
 back_end/static/voiceData/*
 back_end/static/alphaTestFloder/*
 back_end/static/alphaTest/*
+back_end/static/betaTest/*
 back_end/server.log
 back_end/tencent_log.txt
 back_end/text_data.csv
 server.log
+back_end/__pycache__/app.cpython-37.pyc
+back_end/__pycache__/gunicorn.config.cpython-37.pyc
+back_end/__pycache__/gunicorn.cpython-37.pyc
+back_end/fail_log.txt
+back_end/scheduler.lock
+back_end/log/access.log
+back_end/log/debug.log
+back_end/log/gunicorn.pid
