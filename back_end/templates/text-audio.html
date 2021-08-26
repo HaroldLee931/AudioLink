@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+
+    <title>重塑：巴别塔</title>
+    <!--
+    阿哈你发现了我
+    这里是项目：巴别塔的开发致你的一些话：
+    这是一次临时起意的共创项目，
+    由于主程缺少web开发经验，
+    所以请不要发起DDOS攻击，
+    不要上传过大的文件，非音频类文件。
+    不要伪装文件进行攻击。
+    如果您希望改进我们网站的安全性，以及其他的功能提升
+    请访问项目地址：https://github.com/HaroldLee931/AudioLink
+    紧急联系请拨打：+86 15801881452
+    -->
+
+    <!-- Noto Serif TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/jquery.serializeJSON/2.9.0/jquery.serializejson.js"></script>
+    <style>
+        html {
+            padding: 0;
+            margin: 0;
+        }
+        body {
+            position: relative;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            min-height: 100vh;
+
+            background-color: #000;
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 0;
+            padding: 0;
+        }
+
+        h2 {
+            font-size: 22px;
+            margin: 0;
+            padding: 0;
+        }
+
+        #textBox {
+            margin: 0 auto;
+            padding: 32px 32px 0;
+            font-size: 16px;
+            color: #666;
+        }
+
+        #textContainer {
+            /* max-width: 500px; */
+            /* max-height: 500px; */
+            /* overflow: auto; */
+
+            padding: 16px;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        #textContainer.dark {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        #audioContainer {
+            display: fixed;
+            top: 0;
+            bottom: 0;
+            display: none;
+            visibility: hidden;
+            height: 0;
+            width: 0;
+        }
+
+        .sectionBox {
+            padding: 0 32px 0;
+            color: #fff;
+        }
+        .sectionTitle {
+            margin: 10px auto;
+            font-size: 18px;
+            font-weight: 500;
+            line-height: 36px;
+        }
+        #msg {
+            box-sizing: border-box;
+            width: 100%;
+            height: atuo;
+            padding: 6px;
+            background-color: rgba(0, 0, 0, 0.2);
+            color: #fff;
+            border: 0;
+            font-size: 16px;
+        }
+        #msg::placeholder, 
+        #msg::-webkit-input-placeholder {
+            color: #ccc;
+        }
+        #upload_btn {
+            display: block;
+            border: 0;
+            margin: 10px auto;
+            border-radius: 0;
+            /* background-color: #000; */
+            background-color: rgba(0, 0, 0, 0.2);
+            color: #fff;
+            text-align: center;
+            font-size: 16px;
+            height: 36px;
+            width: 100px;
+
+        }
+
+        #audio_file_input {
+            display: none;
+            visibility: hidden;
+            width: 0;
+            height: 0;
+        }
+
+        #select_btn {
+            float: right;
+            border: 0;
+            margin: 0;
+            border-radius: 0;
+            /* background-color: #000; */
+            background-color: rgba(0, 0, 0, 0.2);
+            color: #fff;
+            text-align: center;
+            font-size: 16px;
+            height: 36px;
+            width: 100px;
+        }
+        #fileSize {
+            float: right;
+        }
+        #import_btn {
+            display: block;
+            border: 0;
+            margin: 10px auto;
+            border-radius: 0;
+            /* background-color: #000; */
+            background-color: rgba(0, 0, 0, 0.2);
+            color: #fff;
+            text-align: center;
+            font-size: 16px;
+            height: 36px;
+            width: 100px;
+        }
+    </style>
+</head>
+
+<body
+    style="background-image: url('http://gimg2.baidu.com/image_search/src=http%3A%2F%2Fb-ssl.duitang.com%2Fuploads%2Fitem%2F201709%2F12%2F20170912222544_ax82N.thumb.700_0.jpeg&refer=http%3A%2F%2Fb-ssl.duitang.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1632386705&t=2899a47dae41775d43ee071542a795e7');">
+
+    <div id="textBox">
+        <!-- dark 是灰底白字 -->
+        <!-- 默认为白底黑字 -->
+        <div id="textContainer" class="dark">
+            <h1>Lorem ipsum dolor sit amet, consectetur?</h1>
+            <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ipsam quibusdam iste repudiandae cum quasi doloribus in optio doloremque, earum nulla.</p>
+        </div>
+    </div>
+
+    <div class="sectionBox">
+        <h2 class="sectionTitle">输入一段话</h2>
+        <form>
+            <textarea id="msg" name="usermsg" rows="5" placeholder="让我们重塑巴别塔"></textarea>
+            <button id="upload_btn">提交</button>
+        </form>
+    </div>
+
+    <div class="sectionBox">
+        <h2 class="sectionTitle">
+            或上传一段音频
+            <button id="select_btn">选择文件</button>
+        </h2>
+        
+        <sapn id="fileName"></sapn> <span id="fileSize"></span>
+        <form enctype="multipart/form-data">
+            <p><input type="file" id="audio_file_input" name="audio_file_input" accept="audio/*"/></p>
+            <button id="import_btn">上传</button>
+        </form>
+    </div>
+
+    <div id="audioContainer">
+        <div id="player">
+            <div id="inbo">
+                <div id="change"></div>
+            </div>
+            <input type="hidden" id="audiolength">
+            <hr>
+            <audio id="audioSave" controls autoplay></audio>
+        </div>
+    </div>
+
+    <!-- <script type="text/javascript" src="./HZRecorder.js"></script> -->
+    <script>
+        var buffer;
+        var MAX_FILE_SIZE = 20; // 20MB
+
+        var $audioFileIpt = $("#audio_file_input");
+        var $uploadBtn = $("#upload_btn"); // 上传文字按钮
+        var $importBtn = $("#import_btn"); // 上传音频按钮
+
+        $('#select_btn').on("click", function(e){
+            $audioFileIpt.trigger("click");
+        })
+        
+        $audioFileIpt.on("change", function(e) {
+            var fileName = "";
+            var fileSize = 0;
+            var files = $audioFileIpt.prop('files');
+            // console.log("audio_file_input change", e, $audioFileIpt.prop('files'));
+            if (files && files.length) {
+                fileName = files[0].name;
+                fileSize = files[0].size;
+                if (fileSize > MAX_FILE_SIZE*1024*1024) {
+                    alert("音频文件大于"+MAX_FILE_SIZE+"MB，请勿上传！");
+                }
+                $("#fileName").text(fileName);
+                var fileMBSize = (fileSize / 1024 / 1024).toFixed(2) + " MB";
+                $("#fileSize").text(fileMBSize);
+            }
+        });
+
+
+        // Text upload function
+        // special thanks to https://blog.csdn.net/weixin_45050258/article/details/103134233
+        $uploadBtn.click(function () {
+
+            var isDisbaled = $uploadBtn.prop("disabled");
+            if (isDisbaled) return; // 正在上传中，不重复提交
+
+            // 暂时禁用按钮，防止连击重复提交
+            $uploadBtn.prop("disabled", "disabled");
+            $uploadBtn.text("提交中…");
+
+            var sentence = JSON.stringify($('#msg').serializeJSON());  // {"usermsg":"msg"}
+            $.ajax({
+                type: "POST", // 传输方式
+                url: "/text_pipeline",
+                contentType: "application/json;charser=UTF-8",
+                data: sentence,  // {"username":"chen","nickname":"alien"} 传输待传输数据
+                dataType: "text", // 预期返回的数据格式
+                success: function (ret) {  // 这里的ret后端返回的
+                    $uploadBtn.removeAttr("disabled"); // 解除禁用
+                    $uploadBtn.text("提交");
+                    alert(ret);
+                },
+                error: function () {
+                    $uploadBtn.removeAttr("disabled"); // 解除禁用
+                    $uploadBtn.text("提交");
+                    alert("请求出错！");
+                }
+            });
+        });
+
+        function jump(url) {
+            alert(url);
+            window.location.href = url;
+        };
+
+        // Audion upload function
+        // Special thanks to https://www.cnblogs.com/Renyi-Fan/p/9581951.html
+        $importBtn.click(function (e) {
+
+            e.preventDefault();
+
+            var isDisbaled = $importBtn.prop("disabled");
+            if (isDisbaled) return; // 正在上传中，不重复提交
+
+            // 暂时禁用按钮，防止连击重复提交
+            $importBtn.prop("disabled", "disabled");
+            $importBtn.text("上传中…");
+
+            var files = $('#audio_file_input').prop('files');
+            var audio_data = new FormData();
+            audio_data.append('audio_file_input', files[0]);
+            $.ajax({
+                type: 'POST',
+                url: "/audio_pipeline",
+                data: audio_data,
+                cache: false,
+                processData: false,
+                contentType: false,
+                async: false,
+                /* dataType:"text",
+                success: function (ret) {
+                    alert(ret['context']);
+                    window.location.replace("/vislization.html");
+                },*/
+                // TODO: 需要一个禁止再次按按钮的功能
+                // TODO: 需要保存cookie
+                success: function (ret) {
+                    $importBtn.removeAttr("disabled"); // 解除禁用
+                    $importBtn.text("上传");
+                    alert(ret['content']);
+                    buffer = ret;
+                    jump(ret['content']);
+                },
+
+                error: function (ret) {
+                    $importBtn.removeAttr("disabled"); // 解除禁用
+                    $importBtn.text("上传");
+                    alert(ret['content']);
+                },
+            });
+        });
+    </script>
+
+</body>
+
+
+</html>
