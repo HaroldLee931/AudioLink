@@ -57,7 +57,8 @@ def requestAToTResult(taskId:int) -> dict:
     resp = client.DescribeTaskStatus(req)
     return json.loads(resp.to_json_string())
   except TencentCloudSDKException as err:
-    return (err)
+    app.logger.warning(err)
+    return 0
 
 ###################################
 #    Data processing function     #
@@ -89,11 +90,10 @@ def jiebaCut(sentence:str):
 chineseChrOnlyRegex = re.compile(r"[\u4e00-\u9fa5]+")
 
 # unique user ID generator
-def dataIDGenerator()->int:
-  return r.dbsize() + 1
 
 # save the data to redis
-def saveToRedis(dataID:int, timeData:float, AOrT:int, taskID:int, sentence:str):
+def saveToRedis(timeData:float, AOrT:int, taskID:int, sentence:str):
+  dataID = str(r.dbsize() + 1) + str(int(time.time()*100000000)%1000)
   newATData = {'timeStamp': str(timeData)}
   if AOrT == 0:  # if recive text only
     newATData['sentenceData'] = sentence
@@ -103,7 +103,6 @@ def saveToRedis(dataID:int, timeData:float, AOrT:int, taskID:int, sentence:str):
     newATData['taskID'] = taskID
     r.rpush("waiting_list", dataID)
     r.incr("audio_upload_beta", amount=1)
-  app.logger.info(newATData)
   r.hmset(dataID, newATData)
   return 0
 
@@ -116,20 +115,25 @@ def updateTaskStat():
     return 0
   for i in r.lrange("waiting_list", 0, -1):
     task_id = r.hget(i, "taskID")
-    result_form_asr = requestAToTResult(int(task_id))['Data']
-    if result_form_asr['Status'] == 2:
-      app.logger.warning('The ASR task: %s is SUCC\n add releated DATAID to nlp_wait_queue', task_id)
-      r.hset(i, 'Status', 2)
-      r.hset(i, 'sentenceData', ''. join(chineseChrOnlyRegex.findall(result_form_asr['Result'])))
-      # add to NLP queue
-      r.rpush("nlp_wait_queue", i)
-      r.lrem("waiting_list", 1, i)
-    elif result_form_asr['Status'] == 3:
-      r.hset(i, 'Status', 3)
-      app.logger.warning('The ASR task: %s is FAIL', task_id)
-      r.lrem("waiting_list", 1, i)
+    result_form_asr = requestAToTResult(int(task_id))
+    if result_form_asr == 0:
+      app.logger.warning('The ASR task: %s is failed in ASR SDK', task_id)
+      continue
     else:
-      app.logger.info('The ASR task: %s is still processing', task_id)
+      asr_data = result_form_asr['Data']
+      if asr_data['Status'] == 2:
+        app.logger.warning('The ASR task: %s is SUCC add releated DATAID to nlp_wait_queue', task_id)
+        r.hset(i, 'Status', 2)
+        r.hset(i, 'sentenceData', ''. join(chineseChrOnlyRegex.findall(asr_data['Result'])))
+        # add to NLP queue
+        r.rpush("nlp_wait_queue", i)
+        r.lrem("waiting_list", 1, i)
+      elif asr_data['Status'] == 3:
+        r.hset(i, 'Status', 3)
+        app.logger.warning('The ASR task: %s is FAIL', task_id)
+        r.lrem("waiting_list", 1, i)
+      else:
+        app.logger.info('The ASR task: %s is still processing', task_id)
   return 1
 
 def updateNLPStat():
@@ -208,7 +212,7 @@ def updateASRJobsresult():
 ###################################
 @app.route("/")
 def visit_user_input_page():
-  return render_template('interface.html')
+  return render_template('text-audio.html')
 
 @app.route("/visualization")
 def visit_visualization_page():
@@ -229,8 +233,7 @@ def recive_text_data():
   # https://blog.csdn.net/zhangvalue/article/details/93884630
   # https://blog.csdn.net/longting_/article/details/80637002
   text = json.loads(request.data.decode('utf8').replace("'", '"')) # same with <input name='usermsg'>
-  dataID = dataIDGenerator()
-  saveToRedis(dataID, time.time(), 0, 0, text['usermsg'])
+  saveToRedis(time.time(), 0, 0, text['usermsg'])
   return str("hhh")
 
 @app.route("/audio_pipeline", methods=['GET','POST'])
@@ -244,8 +247,7 @@ def recive_audio_data():
   # TODO: 大文件可能会导致服务器无响应 https://juejin.cn/post/6992116138398187533
   taskID = audioToText(audioFilePath)
   if(taskID != 1):
-    dataID = dataIDGenerator()
-    saveToRedis(dataID, start, 1, taskID, str())
+    saveToRedis(start, 1, taskID, str())
     # TODO: need to return a html with variable with dataID
     return jsonify(content=str("http://110.40.187.74:8988/visualization"))
   else:

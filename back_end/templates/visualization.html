@@ -1,29 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Sketch</title>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='visualization/style.css') }}">
+  <title>重塑：巴别塔</title>
+  <!--
+    阿哈你发现了我
+    这里是项目：巴别塔的开发致你的一些话：
+    这是一次临时起意的共创项目，
+    由于主程缺少web开发经验，
+    所以请不要发起DDOS攻击，
+    不要上传过大的文件，非音频类文件。
+    不要伪装文件进行攻击。
+    如果您希望改进我们网站的安全性，以及其他的功能提升
+    请访问项目地址：https://github.com/HaroldLee931/AudioLink
+    紧急联系请拨打：+86 15801881452
+  -->
 
-    <!-- Noto Serif TC
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200&display=swap" rel="stylesheet"> -->
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='visualization/style.css') }}">
 
-    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
-    <!-- <script src="{{ url_for('static', filename='visualization/p5.min.js') }}"></script>-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js" integrity="sha512-N4kV7GkNv7QR7RX9YF/olywyIgIwNvfEe2nZtfyj73HdjCUkAfOBDbcuJ/cTaN04JKRnw1YG1wnUyNKMsNgg3g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- <script src="{{ url_for('static', filename='visualization/p5.sound.min.js') }}"></script> only working on https-->
+  <!-- Noto Serif TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100;300;400&display=swap" rel="stylesheet">
+
+  <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"
+    integrity="sha512-N4kV7GkNv7QR7RX9YF/olywyIgIwNvfEe2nZtfyj73HdjCUkAfOBDbcuJ/cTaN04JKRnw1YG1wnUyNKMsNgg3g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    * {
+      font-family: 'Noto Sans SC', sans-serif;
+    }
+
+    .main {
+      text-align: center;
+      /*让div内部文字居中*/
+      background-color: rgba(129, 129, 129, 0.2);
+      color: #fff;
+      border-radius: 20px;
+      width: 300px;
+      height: 400px;
+      margin: auto;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border:1px solid rgba(194, 194, 194, 0.356);
+    }
+    .main img  {
+        max-width: 70%;
+        max-height: 70%;
+        display: block;
+        margin: auto;
+    }
+  </style>
 
 
+</head>
 
-  </head>
+<body>
+  <script src="{{ url_for('static', filename='visualization/sketch.js') }}"></script>
 
   <body>
-    <!--TODO: 前端页面刷新-->
-    <script src="{{ url_for('static', filename='visualization/sketch.js') }}"></script>
+    <div class="main">
+      <h1>感谢您的参与</h1>
+      <p>请保留下面的二维码<br>以便在8月29日访问我们的网站</p>
+      <img src="{{ url_for('static', filename='img_source/visualization.png') }}" alt="QR_CODE">
+    </div>
   </body>
+</body>
+
 </html>

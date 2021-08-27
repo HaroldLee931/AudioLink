@@ -20,14 +20,20 @@
     紧急联系请拨打：+86 15801881452
     -->
 
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='visualization/style.css') }}">
     <!-- Noto Serif TC -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100;300;400&display=swap" rel="stylesheet">
 
     <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://cdn.bootcss.com/jquery.serializeJSON/2.9.0/jquery.serializejson.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js" integrity="sha512-N4kV7GkNv7QR7RX9YF/olywyIgIwNvfEe2nZtfyj73HdjCUkAfOBDbcuJ/cTaN04JKRnw1YG1wnUyNKMsNgg3g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="{{ url_for('static', filename='text-audio/sketch.js') }}"></script>
     <style>
+        * {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
         html {
             padding: 0;
             margin: 0;
@@ -68,13 +74,13 @@
             /* max-width: 500px; */
             /* max-height: 500px; */
             /* overflow: auto; */
-
+            margin-right: 20%;
             padding: 16px;
             background-color: rgba(255, 255, 255, 0.5);
         }
 
         #textContainer.dark {
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(129, 129, 129, 0);
             color: white;
         }
 
@@ -89,41 +95,50 @@
         }
 
         .sectionBox {
+            margin-right: 20%;
             padding: 0 32px 0;
             color: #fff;
         }
         .sectionTitle {
+            margin: 0px auto;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 500;
+            line-height: 36px;
+        }
+        .sectionTextBox {
             margin: 10px auto;
             font-size: 18px;
             font-weight: 500;
             line-height: 36px;
+
         }
         #msg {
             box-sizing: border-box;
             width: 100%;
             height: atuo;
-            padding: 6px;
-            background-color: rgba(0, 0, 0, 0.2);
+            padding: 6px 16px;
+            background-color: rgba(129, 129, 129, 0.2);
             color: #fff;
             border: 0;
             font-size: 16px;
         }
-        #msg::placeholder, 
+        #msg::placeholder,
         #msg::-webkit-input-placeholder {
             color: #ccc;
         }
         #upload_btn {
-            display: block;
-            border: 0;
-            margin: 10px auto;
-            border-radius: 0;
-            /* background-color: #000; */
-            background-color: rgba(0, 0, 0, 0.2);
-            color: #fff;
-            text-align: center;
-            font-size: 16px;
-            height: 36px;
-            width: 100px;
+          display: block;
+          border: 0;
+          margin: auto;
+          margin-right: 0%;
+          /* background-color: #000; */
+          background-color: rgba(129, 129, 129, 0.2);
+          color: #fff;
+          text-align: center;
+          font-size: 16px;
+          height: 36px;
+          width: 100px;
 
         }
 
@@ -135,12 +150,12 @@
         }
 
         #select_btn {
-            float: right;
+          display: block;
             border: 0;
-            margin: 0;
+            margin: auto;
             border-radius: 0;
             /* background-color: #000; */
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(129, 129, 129, 0.2);
             color: #fff;
             text-align: center;
             font-size: 16px;
@@ -153,10 +168,10 @@
         #import_btn {
             display: block;
             border: 0;
-            margin: 10px auto;
-            border-radius: 0;
+            margin: auto;
+            margin-right: 0%;
             /* background-color: #000; */
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: rgba(129, 129, 129, 0.2);
             color: #fff;
             text-align: center;
             font-size: 16px;
@@ -166,36 +181,37 @@
     </style>
 </head>
 
-<body
-    style="background-image: url('http://gimg2.baidu.com/image_search/src=http%3A%2F%2Fb-ssl.duitang.com%2Fuploads%2Fitem%2F201709%2F12%2F20170912222544_ax82N.thumb.700_0.jpeg&refer=http%3A%2F%2Fb-ssl.duitang.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1632386705&t=2899a47dae41775d43ee071542a795e7');">
+<body>
 
     <div id="textBox">
         <!-- dark 是灰底白字 -->
         <!-- 默认为白底黑字 -->
         <div id="textContainer" class="dark">
-            <h1>Lorem ipsum dolor sit amet, consectetur?</h1>
-            <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ipsam quibusdam iste repudiandae cum quasi doloribus in optio doloremque, earum nulla.</p>
+            <h1 style="font-weight:400;"> re: Babel</h1>
+            <h1 style="font-weight:100;">  重塑：巴别塔</h1>
+            <p style="font-weight:200;"> 第一次接吻、第一次为自己而战、第一次和解……“第一次”的故事关乎勇气、挑战、改变等等。</p>
+            <p style="font-weight:200;"> 与我们分享关于你的“第一次”故事，在这座由无数故事堆起的巴别塔里，你可以找到共鸣，找到归属，找到契合的灵魂，因为你从不是一个人。</p>
+            <p style="font-weight:400;"> 止于语言不通的巴别塔，在此刻又因灵魂共通而重生。</p>
         </div>
     </div>
 
     <div class="sectionBox">
-        <h2 class="sectionTitle">输入一段话</h2>
-        <form>
-            <textarea id="msg" name="usermsg" rows="5" placeholder="让我们重塑巴别塔"></textarea>
-            <button id="upload_btn">提交</button>
+        <h2 class="sectionTitle" style="font-weight:200;">输入一段话</h2>
+        <form class="sectionTextBox">
+            <textarea style="border:2px solid; border-radius:15px;" id="msg" name="usermsg" rows="5" placeholder="请告诉我们你的故事"></textarea>
+            <button style="border:2px solid; border-radius:15px;" id="upload_btn">提交</button>
         </form>
     </div>
 
     <div class="sectionBox">
-        <h2 class="sectionTitle">
-            或上传一段音频
-            <button id="select_btn">选择文件</button>
-        </h2>
-        
+        <h2 class="sectionTitle" style="font-weight:200;">或上传一段音频</h2>
+        <p style="font-weight:200;">（请尽量短于10分钟）</p>
+        <button style="width: 100%; border:2px solid; border-radius:15px;" id="select_btn">选择文件</button>
+
         <sapn id="fileName"></sapn> <span id="fileSize"></span>
         <form enctype="multipart/form-data">
             <p><input type="file" id="audio_file_input" name="audio_file_input" accept="audio/*"/></p>
-            <button id="import_btn">上传</button>
+            <button style="border:2px solid; border-radius:15px;" id="import_btn">上传</button>
         </form>
     </div>
 
@@ -211,6 +227,7 @@
     </div>
 
     <!-- <script type="text/javascript" src="./HZRecorder.js"></script> -->
+
     <script>
         var buffer;
         var MAX_FILE_SIZE = 20; // 20MB
@@ -222,7 +239,7 @@
         $('#select_btn').on("click", function(e){
             $audioFileIpt.trigger("click");
         })
-        
+
         $audioFileIpt.on("change", function(e) {
             var fileName = "";
             var fileSize = 0;
@@ -240,6 +257,10 @@
             }
         });
 
+        function jump(url) {
+            alert("感谢参与，将为您跳转到新页面");
+            window.location.href = url;
+        };
 
         // Text upload function
         // special thanks to https://blog.csdn.net/weixin_45050258/article/details/103134233
@@ -258,11 +279,12 @@
                 url: "/text_pipeline",
                 contentType: "application/json;charser=UTF-8",
                 data: sentence,  // {"username":"chen","nickname":"alien"} 传输待传输数据
-                dataType: "text", // 预期返回的数据格式
+                // dataType: "text", // 预期返回的数据格式
                 success: function (ret) {  // 这里的ret后端返回的
                     $uploadBtn.removeAttr("disabled"); // 解除禁用
                     $uploadBtn.text("提交");
-                    alert(ret);
+                    // alert(ret);
+                    jump("http://110.40.187.74:8988/visualization");
                 },
                 error: function () {
                     $uploadBtn.removeAttr("disabled"); // 解除禁用
@@ -271,11 +293,6 @@
                 }
             });
         });
-
-        function jump(url) {
-            alert(url);
-            window.location.href = url;
-        };
 
         // Audion upload function
         // Special thanks to https://www.cnblogs.com/Renyi-Fan/p/9581951.html
@@ -292,7 +309,7 @@
 
             var files = $('#audio_file_input').prop('files');
             var audio_data = new FormData();
-            audio_data.append('audio_file_input', files[0]);
+            audio_data.append('audio_file', files[0]);
             $.ajax({
                 type: 'POST',
                 url: "/audio_pipeline",
@@ -300,7 +317,7 @@
                 cache: false,
                 processData: false,
                 contentType: false,
-                async: false,
+                async: true,
                 /* dataType:"text",
                 success: function (ret) {
                     alert(ret['context']);
@@ -311,9 +328,8 @@
                 success: function (ret) {
                     $importBtn.removeAttr("disabled"); // 解除禁用
                     $importBtn.text("上传");
-                    alert(ret['content']);
                     buffer = ret;
-                    jump(ret['content']);
+                    jump("http://110.40.187.74:8988/visualization");
                 },
 
                 error: function (ret) {
