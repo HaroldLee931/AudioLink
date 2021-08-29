@@ -4,6 +4,7 @@ from flask_cors import CORS
 import json
 import time
 import os
+import random
 # import jieba.posseg as pseg
 #import pandas as pd
 #from pandas.io.parsers import read_csv
@@ -214,10 +215,20 @@ def updateASRJobsresult():
 def visit_user_input_page():
   return render_template('text-audio.html')
 
+@app.route("/visualization0")
+def visit_visualization_page0():
+  return render_template('visualization0.html')
+
+@app.route("/visualization1")
+def visit_visualization_page1():
+  return render_template('visualization1.html')
+
 @app.route("/visualization")
 def visit_visualization_page():
-  r.incr("visualization_beta", amount=1)
-  return render_template('visualization.html')
+  if random.randint(0, 1) == 0:
+    return render_template('visualization0.html')
+  else:
+    return render_template('visualization1.html')
 
 # TODO: eggs page developing
 @app.route("/eggs")
